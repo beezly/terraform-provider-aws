@@ -5,7 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/directconnect"
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func dataSourceAwsDxConnection() *schema.Resource {
@@ -37,7 +37,7 @@ func dataSourceAwsDxConnection() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"tags": tagsSchema(),
+			"tags": tagsSchemaComputed(),
 		},
 	}
 }
