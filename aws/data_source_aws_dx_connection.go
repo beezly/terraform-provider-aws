@@ -33,9 +33,14 @@ func dataSourceAwsDxConnection() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
+			"id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"name": {
 				Type:     schema.TypeString,
-				Required: true,
+				Computed: true,
 			},
 			"tags": tagsSchemaComputed(),
 		},
@@ -44,51 +49,27 @@ func dataSourceAwsDxConnection() *schema.Resource {
 
 func dataSourceAwsDxConnectionRead(d *schema.ResourceData, meta interface{}) error {
 	conn := meta.(*AWSClient).dxconn
-	name := d.Get("name").(string)
 
-	tags := tagsFromMapDX(d.Get("tags").(map[string]interface{}))
+	req := &directconnect.DescribeConnectionsInput{}
 
-	connections := make([]*directconnect.Connection, 0)
-	// DescribeDirectConnectionsInput does not have a name parameter for filtering
-	input := &directconnect.DescribeConnectionsInput{}
-	output, err := conn.DescribeConnections(input)
+	if v, ok := d.GetOk("id"); ok {
+		req.ConnectionId = aws.String(v.(string))
+	}
+
+	resp, err := conn.DescribeConnections(req)
 
 	if err != nil {
-		return fmt.Errorf("error reading Direct Connect Connections %s", err)
+		return err
 	}
 
-	for _, connection := range output.Connections {
-		var tagsMatched int
-		if aws.StringValue(connection.ConnectionName) == name {
-			if len(tags) > 0 {
-				tagsMatched = 0
-				for _, tag := range tags {
-					for _, tagRequested := range connection.Tags {
-						if *tag.Key == *tagRequested.Key && *tag.Value == *tagRequested.Value {
-							tagsMatched = tagsMatched + 1
-						}
-					}
-				}
-
-				if tagsMatched == len(tags) {
-					connections = append(connections, connection)
-				}
-
-			} else {
-				connections = append(connections, connection)
-			}
-		}
+	if len(resp.Connections) < 1 {
+		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
+	}
+	if len(resp.Connections) > 1 {
+		return fmt.Errorf("Your query returned more than one result. Please try a more specific search criteria.")
 	}
 
-	if len(connections) == 0 {
-		return fmt.Errorf("Direct Connect Connection not found for name: %s", name)
-	}
-
-	if len(connections) > 1 {
-		return fmt.Errorf("Multiple Direct Connect Connections found for name: %s", name)
-	}
-
-	connection := connections[0]
+	connection := resp.Connections[0]
 
 	d.SetId(aws.StringValue(connection.ConnectionId))
 
@@ -104,6 +85,7 @@ func dataSourceAwsDxConnectionRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("location", connection.Location)
 	d.Set("bandwidth", connection.Bandwidth)
 	d.Set("jumbo_frame_capable", connection.JumboFrameCapable)
+	d.Set("name", connection.ConnectionName)
 
 	return nil
 }
