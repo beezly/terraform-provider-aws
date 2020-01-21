@@ -13,6 +13,11 @@ func dataSourceAwsDxConnection() *schema.Resource {
 		Read: dataSourceAwsDxConnectionRead,
 
 		Schema: map[string]*schema.Schema{
+			"id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"arn": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -33,14 +38,22 @@ func dataSourceAwsDxConnection() *schema.Resource {
 				Type:     schema.TypeBool,
 				Computed: true,
 			},
-			"id": {
+			"has_logical_redundancy": {
 				Type:     schema.TypeString,
-				Optional: true,
 				Computed: true,
 			},
 			"name": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"aws_device": {
+				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"vlan": {
+				Type:     schema.TypeInt,
+				Computed: true,
+				Optional: true,
 			},
 			"tags": tagsSchemaComputed(),
 		},
@@ -85,7 +98,9 @@ func dataSourceAwsDxConnectionRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("location", connection.Location)
 	d.Set("bandwidth", connection.Bandwidth)
 	d.Set("jumbo_frame_capable", connection.JumboFrameCapable)
+	d.Set("has_logical_redundancy", connection.HasLogicalRedundancy)
 	d.Set("name", connection.ConnectionName)
-
+	d.Set("aws_device", connection.AwsDeviceV2)
+	d.Set("vlan", connection.Vlan)
 	return nil
 }
