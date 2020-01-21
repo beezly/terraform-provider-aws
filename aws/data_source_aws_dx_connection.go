@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/directconnect"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"log"
 )
 
 func dataSourceAwsDxConnection() *schema.Resource {
@@ -75,14 +76,27 @@ func dataSourceAwsDxConnectionRead(d *schema.ResourceData, meta interface{}) err
 		return err
 	}
 
-	if len(resp.Connections) < 1 {
+	connections := resp.Connections[:]
+
+	if v, ok := d.GetOk("name"); ok {
+		log.Printf("[DEBUG] Filtering DX Connections by Name: %s", v)
+		nameFiltered := make([]*directconnect.Connection, 0)
+		for _, c := range connections {
+			if *(c.ConnectionName) == v.(string) {
+				nameFiltered = append(nameFiltered, c)
+			}
+		}
+		connections = nameFiltered
+	}
+
+	if len(connections) < 1 {
 		return fmt.Errorf("Your query returned no results. Please change your search criteria and try again.")
 	}
-	if len(resp.Connections) > 1 {
+	if len(connections) > 1 {
 		return fmt.Errorf("Your query returned more than one result. Please try a more specific search criteria.")
 	}
 
-	connection := resp.Connections[0]
+	connection := connections[0]
 
 	d.SetId(aws.StringValue(connection.ConnectionId))
 

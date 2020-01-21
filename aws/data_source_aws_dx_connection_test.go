@@ -36,6 +36,7 @@ func TestAccDataSourceAwsDxConnection_Basic(t *testing.T) {
 					resource.TestCheckResourceAttrPair(datasourceName, "name", resourceName, "name"),
 					resource.TestCheckResourceAttrPair(datasourceName, "location", resourceName, "location"),
 					resource.TestCheckResourceAttrPair(datasourceName, "jumbo_frame_capable", resourceName, "jumbo_frame_capable"),
+					resource.TestCheckResourceAttrPair(datasourceName, "has_logical_redundancy", resourceName, "has_logical_redundancy"),
 					resource.TestCheckResourceAttrPair(datasourceName, "bandwidth", resourceName, "bandwidth"),
 					resource.TestCheckResourceAttr(datasourceName, "state", "requested"),
 				),
@@ -46,8 +47,8 @@ func TestAccDataSourceAwsDxConnection_Basic(t *testing.T) {
 
 func testAccDataSourceAwsDxConnectionConfig(connectionName, dxLocation string) string {
 	return fmt.Sprintf(`
-resource "aws_dx_connection" "wrong" {
-  name            = "%[1]s-wrong"
+resource "aws_dx_connection" "named" {
+  name            = "%[1]s-named"
   bandwidth       = "1Gbps"
   location        = %[2]q
 }
@@ -59,6 +60,10 @@ resource "aws_dx_connection" "test" {
 
 data "aws_dx_connection" "test" {
 	id = aws_dx_connection.test.id
+}
+
+data "aws_dx_connection" "named" {
+	name = aws_dx_connection.named.name
 }
 `, connectionName, dxLocation)
 }
